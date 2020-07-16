@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/url"
 
@@ -16,9 +17,16 @@ var (
 		Short: "Handle common encodings on the commandline",
 	}
 	cmdURLEncoding = &cobra.Command{
-		Use:   "url",
-		Short: "Handle URL encoding",
-		Run:   executeURLEncoding,
+		Use:     "url",
+		Aliases: []string{"u"},
+		Short:   "Handle URL encoding",
+		Run:     executeURLEncoding,
+	}
+	cmdBase64 = &cobra.Command{
+		Use:     "base64",
+		Aliases: []string{"b64"},
+		Short:   "Handle Base64 encoding",
+		Run:     executeBase64,
 	}
 	cmdVersion = &cobra.Command{
 		Use:   "version",
@@ -36,8 +44,11 @@ func init() {
 	viper.BindPFlag("logfile", app.PersistentFlags().Lookup("logfile"))
 
 	cmdURLEncoding.PersistentFlags().BoolP("decode", "d", false, "Decode given argument")
+	cmdURLEncoding.PersistentFlags().BoolP("path", "p", false, "Use path-safe encoding")
 
-	app.AddCommand(cmdURLEncoding, cmdVersion)
+	cmdBase64.PersistentFlags().BoolP("decode", "d", false, "Decode given argument")
+
+	app.AddCommand(cmdURLEncoding, cmdBase64, cmdVersion)
 	viper.SetEnvPrefix("ENDE")
 	viper.AutomaticEnv()
 }
@@ -50,11 +61,38 @@ func main() {
 
 func executeURLEncoding(cmd *cobra.Command, args []string) {
 	decode, _ := cmd.Flags().GetBool("decode")
-	for _, arg := range args {
+	path, _ := cmd.Flags().GetBool("path")
+	convertAndPrintArgs(args, func(s string) (string, error) {
 		if decode {
-			fmt.Println(url.QueryUnescape(arg))
-		} else {
-			fmt.Println(url.QueryEscape(arg))
+			if path {
+				return url.PathUnescape(s)
+			}
+			return url.QueryUnescape(s)
 		}
+		if path {
+			return url.PathEscape(s), nil
+		}
+		return url.QueryEscape(s), nil
+	})
+}
+
+func executeBase64(cmd *cobra.Command, args []string) {
+	decode, _ := cmd.Flags().GetBool("decode")
+	convertAndPrintArgs(args, func(s string) (string, error) {
+		if decode {
+			res, err := base64.StdEncoding.DecodeString(s)
+			return string(res), err
+		}
+		return base64.StdEncoding.EncodeToString([]byte(s)), nil
+	})
+}
+
+func convertAndPrintArgs(args []string, fn func(s string) (string, error)) {
+	for _, arg := range args {
+		res, err := fn(arg)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(res)
 	}
 }
