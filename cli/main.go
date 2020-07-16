@@ -15,10 +15,10 @@ var (
 		Use:   "ende",
 		Short: "Handle common encodings on the commandline",
 	}
-	cmdUrlEncoding = &cobra.Command{
+	cmdURLEncoding = &cobra.Command{
 		Use:   "url",
 		Short: "Handle URL encoding",
-		Run:   executeUrlEncoding,
+		Run:   executeURLEncoding,
 	}
 	cmdVersion = &cobra.Command{
 		Use:   "version",
@@ -35,9 +35,9 @@ func init() {
 	app.PersistentFlags().String("logfile", "-", "Write logfiles to the given file (- for stderr)")
 	viper.BindPFlag("logfile", app.PersistentFlags().Lookup("logfile"))
 
-	cmdUrlEncoding.PersistentFlags().BoolP("decode", "d", false, "Decode given argument")
+	cmdURLEncoding.PersistentFlags().BoolP("decode", "d", false, "Decode given argument")
 
-	app.AddCommand(cmdUrlEncoding, cmdVersion)
+	app.AddCommand(cmdURLEncoding, cmdVersion)
 	viper.SetEnvPrefix("ENDE")
 	viper.AutomaticEnv()
 }
@@ -48,7 +48,7 @@ func main() {
 	}
 }
 
-func executeUrlEncoding(cmd *cobra.Command, args []string) {
+func executeURLEncoding(cmd *cobra.Command, args []string) {
 	decode, _ := cmd.Flags().GetBool("decode")
 	for _, arg := range args {
 		if decode {
